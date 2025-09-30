@@ -1,92 +1,155 @@
-let table = Array.from({length: 9}, () => Array(9).fill(0));
+let grid = Array.from({ length: 9 }, () => Array(9).fill(0));
+let locked = Array.from({ length: 9 }, () => Array(9).fill(false));
+let cell = 60;
+let selected = null;
+let button_y = 560;
 
 function setup() {
-  createCanvas(900, 900);
+  createCanvas(540, 620);
+  textAlign(CENTER, CENTER);
+  textSize(24);
+  makePuzzle(10);
+}
+
+function draw() {
   background(255);
-  
-  generateSudoku();
-  makePuzzle(40);
   drawGrid();
+  drawNumbers();
+  drawButtons();
 }
 
 function drawGrid() {
-  let cell = width / 9;
-  
   for (let i = 0; i <= 9; i++) {
-    if (i == 0 || i == 9) {
-      strokeWeight(6);
-    } else if (i % 3 == 0) {
+    if (i % 3 === 0) {
       strokeWeight(3);
     } else {
       strokeWeight(1);
     }
-    line(i*cell, 0, i*cell, height);
-    line(0, i*cell, width, i*cell);
+    line(0, i * cell, 9 * cell, i * cell);
+    line(i * cell, 0, i * cell, 9 * cell);
   }
-  
-  textAlign(CENTER, CENTER);
-  textSize(cell * 0.6);
+
+  if (selected) {
+    let [r, c] = selected;
+    noFill();
+    strokeWeight(3);
+    rect(c * cell, r * cell, cell, cell);
+  }
+}
+
+
+function drawNumbers() {
+  textSize(32);
   fill(0);
   for (let r = 0; r < 9; r++) {
     for (let c = 0; c < 9; c++) {
-      if (table[r][c] != 0) {
-        text(table[r][c], c*cell + cell/2, r*cell + cell/2);
+      if (grid[r][c] !== 0) {
+        text(grid[r][c], c * cell + cell / 2, r * cell + cell / 2);
       }
     }
   }
 }
 
-function generateSudoku() {
-  solve(0, 0);
+function drawButtons() {
+  textSize(20);
+  for (let i = 0; i < 9; i++) {
+    let x = i * 60;
+    let y = button_y;
+    fill(200);
+    rect(x, y, 60, 50);
+    fill(0);
+    text(i + 1, x + 30, y + 25);
+  }
 }
 
-function solve(row, col) {
-  if (row == 9) return true;
-
-  let nextRow, nextCol;
-  if (col == 8) {
-    nextRow = row + 1;
-    nextCol = 0;
-  } else {
-    nextRow = row;
-    nextCol = col + 1;
-  }
-
-  let nums = [1,2,3,4,5,6,7,8,9];
-  shuffle(nums, true);
-
-  for (let n of nums) {
-    if (isSafe(row, col, n)) {
-      table[row][col] = n;
-      if (solve(nextRow, nextCol)) return true;
-      table[row][col] = 0;
+function mousePressed() {
+  if (mouseY < 540) {
+    let c = floor(mouseX / cell);
+    let r = floor(mouseY / cell);
+    if (r >= 0 && r < 9 && c >= 0 && c < 9) {
+      selected = [r, c];
+    }
+  } else if (mouseY >= button_y && mouseY <= button_y + 50) {
+    let i = floor(mouseX / 60);
+    if (i >= 0 && i < 9 && selected) {
+      let [r, c] = selected;
+      if (!locked[r][c]) {
+        if (isValid(r, c, i + 1)) {
+          grid[r][c] = i + 1;
+        }
+      }
     }
   }
-  return false;
 }
 
-function isSafe(row, col, n) {
-  for (let c = 0; c < 9; c++) if (table[row][c] == n) return false;
-  for (let r = 0; r < 9; r++) if (table[r][col] == n) return false;
-
-  let startRow = Math.floor(row/3) * 3;
-  let startCol = Math.floor(col/3) * 3;
-  for (let r = startRow; r < startRow+3; r++) {
-    for (let c = startCol; c < startCol+3; c++) {
-      if (table[r][c] == n) return false;
+function fillGrid() {
+  for (let i = 0; i < 9; i++) {
+    for (let j = 0; j < 9; j++) {
+      if (grid[i][j] === 0) {
+        let nums = shuffle([...Array(9).keys()].map(x => x + 1));
+        for (let num of nums) {
+          if (isValid(i, j, num)) {
+            grid[i][j] = num;
+            if (fillGrid()) return true;
+            grid[i][j] = 0;
+          }
+        }
+        return false;
+      }
     }
   }
   return true;
 }
 
-function makePuzzle(emptyCount) {
-  let removed = 0;
-  while (removed < emptyCount) {
-    let r = floor(random(9));
-    let c = floor(random(9));
-    if (table[r][c] != 0) {
-      table[r][c] = 0;
-      removed++;
+function makePuzzle(removals = 40) {
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      grid[r][c] = 0;
+      locked[r][c] = false;
     }
   }
+  fillGrid();
+
+  let cells = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      cells.push([r, c]);
+    }
+  }
+  shuffle(cells, true);
+  let count = 0;
+  for (let [r, c] of cells) {
+    if (count >= removals) break;
+    grid[r][c] = 0;
+    locked[r][c] = false;
+    count++;
+  }
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      if (grid[r][c] !== 0) locked[r][c] = true;
+    }
+  }
+}
+
+function isValid(row, col, val) {
+  for (let c = 0; c < 9; c++) {
+    if (grid[row][c] === val) {
+    return false;
+    }
+  }
+  for (let r = 0; r < 9; r++) {
+    if (grid[r][col] === val) {
+      return false;
+    }
+  }
+  let startRow = row - (row % 3);
+  let startCol = col - (col % 3);
+  for (let r = startRow; r < startRow + 3; r++) {
+    for (let c = startCol; c < startCol + 3; c++) {
+      if (grid[r][c] === val) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
