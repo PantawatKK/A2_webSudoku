@@ -13,19 +13,22 @@ let grid = [
 let cell = 60;
 let selected = null;
 let button_y = 560;
-
 let locked = [];
-  for (let r = 0; r < 9; r++) {
-    locked[r] = [];
-    for (let c = 0; c < 9; c++) {
-      locked[r][c] = grid[r][c] !== 0;
 
 function setup() {
   createCanvas(540, 620);
   textAlign(CENTER, CENTER);
   textSize(24);
 
+  let r = 0;
+  while (r < 9) {
+    locked[r] = [];
+    let c = 0;
+    while (c < 9) {
+      locked[r][c] = grid[r][c] !== 0;
+      c++;
     }
+    r++;
   }
 }
 
@@ -37,10 +40,12 @@ function draw() {
 }
 
 function drawGrid() {
-  for (let i = 0; i < 10; i++) {
+  let i = 0;
+  while (i < 10) {
     strokeWeight(i % 3 === 0 ? 3 : 1);
     line(0, i * cell, 9 * cell, i * cell);
     line(i * cell, 0, i * cell, 9 * cell);
+    i++;
   }
 
   if (selected) {
@@ -53,8 +58,10 @@ function drawGrid() {
 
 function drawNumbers() {
   textSize(32);
-  for (let r = 0; r < 9; r++) {
-    for (let c = 0; c < 9; c++) {
+  let r = 0;
+  while (r < 9) {
+    let c = 0;
+    while (c < 9) {
       if (grid[r][c] !== 0) {
         if (locked[r][c]) {
           fill(0);
@@ -65,19 +72,23 @@ function drawNumbers() {
         }
         text(grid[r][c], c * cell + cell / 2, r * cell + cell / 2);
       }
+      c++;
     }
+    r++;
   }
 }
 
 function drawButtons() {
   textSize(20);
-  for (let i = 0; i < 9; i++) {
+  let i = 0;
+  while (i < 9) {
     let x = i * 60;
     let y = button_y;
     fill(200);
     rect(x, y, 60, 50);
     fill(0);
     text(i + 1, x + 30, y + 25);
+    i++;
   }
 }
 
@@ -100,24 +111,35 @@ function mousePressed() {
 }
 
 function isConflict(row, col, val) {
-  for (let c = 0; c < 9; c++) {
+  let c = 0;
+  while (c < 9) {
     if (c !== col && grid[row][c] === val) {
       return true;
     }
+    c++;
   }
-  for (let r = 0; r < 9; r++) {
+
+  let r = 0;
+  while (r < 9) {
     if (r !== row && grid[r][col] === val) {
       return true;
     }
+    r++;
   }
+
   let startRow = row - (row % 3);
   let startCol = col - (col % 3);
-  for (let r = startRow; r < startRow + 3; r++) {
-    for (let c = startCol; c < startCol + 3; c++) {
+  r = startRow;
+  while (r < startRow + 3) {
+    c = startCol;
+    while (c < startCol + 3) {
       if ((r !== row || c !== col) && grid[r][c] === val) {
         return true;
       }
+      c++;
     }
+    r++;
   }
+
   return false;
 }
