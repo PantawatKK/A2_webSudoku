@@ -1,24 +1,29 @@
 let grid = [
-  [5, 3, 0, 0, 7, 0, 0, 0, 0],
-  [6, 0, 0, 1, 9, 5, 0, 0, 0],
-  [0, 9, 8, 0, 0, 0, 0, 6, 0],
-  [8, 0, 0, 0, 6, 0, 0, 0, 3],
-  [4, 0, 0, 8, 0, 3, 0, 0, 1],
-  [7, 0, 0, 0, 2, 0, 0, 0, 6],
-  [0, 6, 0, 0, 0, 0, 2, 8, 0],
-  [0, 0, 0, 4, 1, 9, 0, 0, 5],
-  [0, 0, 0, 0, 8, 0, 0, 7, 9]
+  [5,3,0,0,7,0,0,0,0],
+  [6,0,0,1,9,5,0,0,0],
+  [0,9,8,0,0,0,0,6,0],
+  [8,0,0,0,6,0,0,0,3],
+  [4,0,0,8,0,3,0,0,1],
+  [7,0,0,0,2,0,0,0,6],
+  [0,6,0,0,0,0,2,8,0],
+  [0,0,0,4,1,9,0,0,5],
+  [0,0,0,0,8,0,0,7,9]
 ];
 
-let cell = 60;
-let selected = null;
-let button_y = 560;
 let locked = [];
+let cell; 
+let selected = null;
+let buttonHeight;
+let offsetX, offsetY;
 
 function setup() {
-  createCanvas(540, 620);
+  createCanvas(windowWidth, windowHeight);
   textAlign(CENTER, CENTER);
-  textSize(24);
+
+  cell = min(width, height - 100) / 9;
+  buttonHeight = cell;
+  offsetX = (width - 9 * cell) / 2;
+  offsetY = (height - 9 * cell - buttonHeight - 20) / 2;
 
   let r = 0;
   while (r < 9) {
@@ -37,14 +42,20 @@ function draw() {
   drawGrid();
   drawNumbers();
   drawButtons();
+  Finish();
 }
 
 function drawGrid() {
   let i = 0;
-  while (i < 10) {
-    strokeWeight(i % 3 === 0 ? 3 : 1);
-    line(0, i * cell, 9 * cell, i * cell);
-    line(i * cell, 0, i * cell, 9 * cell);
+  while (i <= 9) {
+    if (i % 3 === 0) {
+      strokeWeight(3);
+    } else {
+      strokeWeight(1);
+    }
+
+    line(offsetX, offsetY + i * cell, offsetX + 9 * cell, offsetY + i * cell);
+    line(offsetX + i * cell, offsetY, offsetX + i * cell, offsetY + 9 * cell);
     i++;
   }
 
@@ -52,25 +63,28 @@ function drawGrid() {
     let [r, c] = selected;
     noFill();
     strokeWeight(3);
-    rect(c * cell, r * cell, cell, cell);
+    rect(offsetX + c * cell, offsetY + r * cell, cell, cell);
   }
 }
 
 function drawNumbers() {
-  textSize(32);
+  textSize(cell * 0.6);
   let r = 0;
   while (r < 9) {
     let c = 0;
     while (c < 9) {
       if (grid[r][c] !== 0) {
         if (locked[r][c]) {
-          fill(0);
-        } else if (isConflict(r, c, grid[r][c])) {
-          fill(255, 0, 0);
+          fill(0); 
         } else {
-          fill(0, 200, 0);
+          if (isConflict(r, c, grid[r][c])) {
+            fill(255, 0, 0); 
+          } else {
+            fill(0, 200, 0);
+          }
         }
-        text(grid[r][c], c * cell + cell / 2, r * cell + cell / 2);
+
+        text(grid[r][c], offsetX + c * cell + cell / 2, offsetY + r * cell + cell / 2);
       }
       c++;
     }
@@ -78,29 +92,31 @@ function drawNumbers() {
   }
 }
 
+
 function drawButtons() {
-  textSize(20);
+  textSize(cell * 0.5);
   let i = 0;
   while (i < 9) {
-    let x = i * 60;
-    let y = button_y;
-    fill(200);
-    rect(x, y, 60, 50);
+    let x = offsetX + i * cell;
+    let y = offsetY + 9 * cell + 20;
+    fill(220);
+    rect(x, y, cell, buttonHeight);
     fill(0);
-    text(i + 1, x + 30, y + 25);
+    text(i + 1, x + cell / 2, y + buttonHeight / 2);
     i++;
   }
 }
 
 function mousePressed() {
-  if (mouseY < 540) {
-    let c = floor(mouseX / cell);
-    let r = floor(mouseY / cell);
-    if (r >= 0 && r < 9 && c >= 0 && c < 9) {
-      selected = [r, c];
-    }
-  } else if (mouseY >= button_y && mouseY <= button_y + 50) {
-    let i = floor(mouseX / 60);
+  if (mouseX > offsetX && mouseX < offsetX + 9 * cell &&
+      mouseY > offsetY && mouseY < offsetY + 9 * cell) {
+    let c = floor((mouseX - offsetX) / cell);
+    let r = floor((mouseY - offsetY) / cell);
+    selected = [r, c];
+  } 
+  else if (mouseY > offsetY + 9 * cell + 20 &&
+           mouseY < offsetY + 9 * cell + 20 + buttonHeight) {
+    let i = floor((mouseX - offsetX) / cell);
     if (i >= 0 && i < 9 && selected) {
       let [r, c] = selected;
       if (!locked[r][c]) {
@@ -129,6 +145,7 @@ function isConflict(row, col, val) {
 
   let startRow = row - (row % 3);
   let startCol = col - (col % 3);
+
   r = startRow;
   while (r < startRow + 3) {
     c = startCol;
@@ -142,4 +159,38 @@ function isConflict(row, col, val) {
   }
 
   return false;
+}
+
+function Finish() {
+  let r = 0;
+  while (r < 9) {
+    let c = 0;
+    while (c < 9) {
+      if (grid[r][c] === 0) {
+        return false;
+      } else {
+        if (isConflict(r, c, grid[r][c])) {
+          return false;
+        }
+      }
+      c++;
+    }
+    r++;
+  }
+
+  background(255);
+  fill(0);
+  textSize(50);
+  textAlign(CENTER, CENTER);
+  text("You Win!", width / 2, height / 2);
+  noLoop();
+  return true;
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  cell = min(width, height - 100) / 9;
+  buttonHeight = cell;
+  offsetX = (width - 9 * cell) / 2;
+  offsetY = (height - 9 * cell - buttonHeight - 20) / 2;
 }
